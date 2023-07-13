@@ -8,6 +8,20 @@
 
 - Link para o artigo completo - [Clique aqui para ler](https://www.diskinternals.com/vmfs-recovery/esxcli-storage-vmfs-unmap/)
 
+## Pre-requisitos
+
+> Powershell versão 5.1 ou superior
+
+> Powercli versão 10 ou superior
+
+## O que este script faz?
+
+1. Conecta no vCenter especificado
+2. Guarda numa variável o nome de todos os Hosts
+3. Guarda em outra variável o nome de todos os Datastores
+4. Valida a versão do VMFS de cada Datastore
+5. Roda o Unmap apenas nos Datastores com versão inferior a 6
+
 <div align="center">
   <br/>
   <br/>
