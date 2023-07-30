@@ -12,6 +12,7 @@
    Another example of how to use this cmdlet
 .SOURCE
    Based on KB https://kb.vmware.com/s/article/2057513
+   Encrypt Password on Powershell (using AES KEY) https://www.altaro.com/msp-dojo/encrypt-password-powershell/
 .CREATOR
    Juliano Alves de Brito Ribeiro (find me at julianoalvesbr@live.com or https://github.com/julianoabr)
 .VERSION
