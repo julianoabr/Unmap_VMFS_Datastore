@@ -19,6 +19,18 @@
    0.1
 .ENVIRONMENT
    Production
+.TO THINK
+
+PSALMS 19. v 1 - 4
+1. The heavens declare the glory of God;
+the skies proclaim the work of his hands.
+2. Day after day they pour forth speech;
+night after night they reveal knowledge.
+3. They have no speech, they use no words;
+no sound is heard from them.
+4. Yet their voice goes out into all the earth,
+their words to the ends of the world.
+
 #>
 
 
