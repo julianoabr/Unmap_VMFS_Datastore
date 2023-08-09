@@ -1,4 +1,4 @@
-﻿#Requires -RunAsAdministrator
+#Requires -RunAsAdministrator
 #Requires -Version 5.1
 
 <#
@@ -16,7 +16,7 @@
 .CREATOR
    Juliano Alves de Brito Ribeiro (find me at julianoalvesbr@live.com or https://github.com/julianoabr)
 .VERSION
-   0.1
+   0.2
 .ENVIRONMENT
    Production
 .TO THINK
@@ -32,11 +32,26 @@ no sound is heard from them.
 their words to the ends of the world.
 
 #>
-
-
 Clear-Host
 
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -WebOperationTimeoutSeconds -1 -Scope AllUsers -Confirm:$false -Verbose
+
+
+#VALIDATE MODULE
+$moduleExists = Get-Module -Name Vmware.VimAutomation.Core
+
+if ($moduleExists){
+    
+    Write-Output "The Module Vmware.VimAutomation.Core is already loaded"
+    
+}#if validate module
+else{
+    
+    Import-Module -Name Vmware.VimAutomation.Core -WarningAction SilentlyContinue -ErrorAction Stop
+    
+}#else validate module
+
+
 
 #VALIDATE IF OPTION IS NUMERIC
 function isNumeric ($x) {
@@ -47,7 +62,7 @@ function isNumeric ($x) {
 
 
 #FUNCTION CONNECT TO VCENTER
-function Connect-TovCenterServer
+function ConnectTo-vCenterServer
 {
     [CmdletBinding()]
     Param
@@ -62,28 +77,37 @@ function Connect-TovCenterServer
                       
         [Parameter(Mandatory=$false,
                    Position=1)]
-        [System.String[]]$vCenterServers, 
+        [System.String[]]$vCenterServerList, 
                 
        
         [Parameter(Mandatory=$false,
                    Position=2)]
         [ValidateSet('80','443')]
-        [System.String]$port = '443',
+        [System.String]$vCPort = '443',
+
+         [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=3)]
+        [ValidateSet('DomainOS','StandAloneOS')]
+        $environmentOS = 'StandAloneOS',
 
         [Parameter(Mandatory=$false,
-                   Position=3)]
+                   Position=4)]
         [System.String]$userName = 'domain\user'
 
     )
 
-    #Set up path and user variables (CHANGE ACCORDING TO YOUR ENVIRONMENT)
+#VALIDATE IF USE AES KEY - SO STANDALONE OR ONLY USER AND PWD - SO ON DOMAIN
+If ($environmentOS -eq 'StandAloneOS'){
+    
+    #Set Path and User variables (CHANGE ACCORDING TO YOUR ENVIRONMENT)
     $AESKeyFilePath = "$env:systemdrive\path1\PWD\ENCRYPT\aeskey.txt" # location of the AESKey                
     
     $SecurePwdFilePath = "$env:systemdrive\patsh1\PROCESS\PWD\ENCRYPT\credpassword.txt" # location of the file that hosts the encrypted password                
     
     $userUPN = $userName # User account login 
-
-    #use key and password to create local secure password 
+    
+    #Use Key and Password to create local secure password 
     #IF YOU ARE IN A DOMAIN ENVIRONMENT AES KEY IS NOT NECESSARY
     $AESKey = Get-Content -Path $AESKeyFilePath 
     
@@ -93,49 +117,27 @@ function Connect-TovCenterServer
 
     #crete a new psCredential object with required username and password
     $vCenterCred = New-Object System.Management.Automation.PSCredential($userUPN, $securePass)
+    
+}#end of Std OS
+
+
+If ($environmentOS -eq 'DomainOS'){
+    
+    
+    $vCenterPWD = (Get-content "V:\BOX\PROCESS\PWD\ENCRYPT\EncryptPWD.txt") | ConvertTo-SecureString
+
+    $vCenterCred = New-Object -typename System.Management.Automation.PSCredential -argumentlist $userName,$vCenterPWD
 
     
-    #VALIDATE MODULE
-    $moduleExists = Get-Module -Name Vmware.VimAutomation.Core
+}#end of Std OS
 
-    if ($moduleExists){
-    
-        Write-Output "The Module Vmware.VimAutomation.Core is already loaded"
-    
-    }#if validate module
-    else{
-    
-        Import-Module -Name Vmware.VimAutomation.Core -WarningAction SilentlyContinue -ErrorAction Stop
-    
-    }#else validate module
 
-       
-
-    if ($methodToConnect -like 'Automatic'){
+if ($methodToConnect -like 'Automatic'){
         
-        foreach ($vCenterServer in $vCenterServers){
+    foreach ($vCenterServer in $vCenterServerList){
         
-            $Script:workingServer = $vCenterServer
+        $Script:workingServer = $vCenterServer
 
-            $vCentersConnected = $global:DefaultVIServers.Count
-
-            if ($vCentersConnected -eq 0){
-            
-                Write-Host "You are not connected to any vCenter" -ForegroundColor DarkGreen -BackgroundColor White
-            
-            }#validate connected vCenters
-            else{
-            
-                Disconnect-VIServer -Server * -Confirm:$false -Force -Verbose -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-            
-            }#validate if you are connected to some vCenter
-        
-        
-        }#end of Foreach
-
-    }#end of If Method to Connect
-    else{
-        
         $vCentersConnected = $global:DefaultVIServers.Count
 
         if ($vCentersConnected -eq 0){
@@ -147,57 +149,78 @@ function Connect-TovCenterServer
             
             Disconnect-VIServer -Server * -Confirm:$false -Force -Verbose -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
             
-         }#validate connected vCenters
+        }#validate if you are connected to some vCenter
         
-        $workingLocationNum = ""
         
-        $tmpWorkingLocationNum = ""
-        
-        $Script:WorkingServer = ""
-        
-        $i = 0
+    }#end of Foreach
 
-        #MENU SELECT VCENTER
-        foreach ($vCenterServer in $vCenterServers){
+}#end of If Method to Connect
+else{
+        
+    $vCentersConnected = $global:DefaultVIServers.Count
+
+    if ($vCentersConnected -eq 0){
+            
+        Write-Host "You are not connected to any vCenter" -ForegroundColor DarkGreen -BackgroundColor White
+            
+    }#validate connected vCenters
+    else{
+            
+        Disconnect-VIServer -Server * -Confirm:$false -Force -Verbose -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+            
+    }#validate connected vCenters
+        
+    $workingLocationNum = ""
+        
+    $tmpWorkingLocationNum = ""
+        
+    $Script:WorkingServer = ""
+        
+    $i = 0
+
+    #MENU SELECT VCENTER
+    foreach ($vCenterServer in $vCenterServerList){
 	   
-                $vcServerValue = $vCenterServer
+        $vcServerValue = $vCenterServer
 	    
-                Write-Output "            [$i].- $vcServerValue ";	
-	            $i++	
-                }#end foreach	
-                Write-Output "            [$i].- Exit this script ";
+        Write-Output "            [$i].- $vcServerValue ";	
+	    
+        $i++	
+        }#end foreach	
+        
+        Write-Output "            [$i].- Exit this script ";
 
-                while(!(isNumeric($tmpWorkingLocationNum)) ){
-	                $tmpWorkingLocationNum = Read-Host "Type vCenter Number that you want to connect"
-                }#end of while
+            while(!(isNumeric($tmpWorkingLocationNum)) ){
+	        
+                $tmpWorkingLocationNum = Read-Host "Type vCenter Number that you want to connect"
+        
+            }#end of while
 
-                    $workingLocationNum = ($tmpWorkingLocationNum / 1)
+            $workingLocationNum = ($tmpWorkingLocationNum / 1)
 
-                if(($WorkingLocationNum -ge 0) -and ($WorkingLocationNum -le ($i-1))  ){
-	                $Script:WorkingServer = $vcServers[$WorkingLocationNum]
-                }
-                else{
+            if(($WorkingLocationNum -ge 0) -and ($WorkingLocationNum -le ($i-1))  ){
+	        
+                $Script:WorkingServer = $vcServers[$WorkingLocationNum]
+        
+            }
+            else{
             
-                    Write-Host "Exit selected, or Invalid choice number. End of Script " -ForegroundColor Red -BackgroundColor White
+                Write-Host "Exit selected, or Invalid choice number. End of Script " -ForegroundColor Red -BackgroundColor White
             
-                    Exit;
-                }#end of else
-
-       
+                Exit;
+            }#end of else
       
-    }#end of Else Method to Connect
+}#end of Else Method to Connect
 
-     foreach ($vCenterServer in $vCenterServers){
+    foreach ($vCenterServer in $vCenterServerList){
 
-     #Connect to Vcenter
-     $Script:vcInfo = Connect-VIServer -Server $Script:WorkingServer -Port $port -WarningAction Continue -ErrorAction Stop -Credential $vCenterCred
+    #Connect to Vcenter
+    $Script:vcInfo = Connect-VIServer -Server $Script:WorkingServer -Port $vCPort -WarningAction Continue -ErrorAction Stop -Credential $vCenterCred
      
-     Write-Host "You are connected to vCenter: $Script:WorkingServer" -ForegroundColor White -BackGroundColor DarkMagenta
+    Write-Host "You are connected to vCenter: $Script:WorkingServer" -ForegroundColor White -BackGroundColor DarkMagenta
 
-     }
+    }
     
-
-
 }#End of Function Connect to Vcenter
 
 
@@ -208,7 +231,7 @@ function Perform-VMFSUnmap
     Param
     (
         # Param help description
-        [Parameter(Mandatory=$false,
+        [Parameter(Mandatory=$true,
                    ValueFromPipelineByPropertyName=$true,
                    Position=0)]
         [System.String[]]$dsName, 
@@ -227,7 +250,7 @@ function Perform-VMFSUnmap
 
     $esxiHost = Get-VMHost -Name $esxiHostName
     
-    Write-Host "Using ESXCLI to connect to ESXi: $esxiHostName" -ForegroundColor Green
+    Write-Host "Using ESXcli to connect to ESXi: $esxiHostName" -ForegroundColor Green
     
     $ds = Get-Datastore -Name $dsName
 
@@ -283,6 +306,7 @@ function Perform-VMFSUnmap
 
 }#end of function
 
+#MAIN SCRIPT
 
 #DEFINE VCENTER LIST
 $vcServerList = @();
@@ -323,14 +347,14 @@ switch ($dayToRun)
     }
     Default {
     
-        Write-Host "Today is not a day to run UNMAP"
+        Write-Host "Today is not a day to run UNMAP on any vCenter"
     
     }
 
 }
 
-#CALL FUNCTION
-Connect-ToVcenterServer -methodToConnect Automatic -vCenterServers $vcServer -port 443
+#CALL FUNCTION TO CONNECTO TO VCENTER
+ConnectTo-vCenterServer -methodToConnect Automatic -vCenterServerList $vcServerList -vCPort 443
 
 #CREATE VARIABLES
 $dsListName = @()
@@ -359,7 +383,7 @@ foreach ($dsName in $dsListName){
 
     Write-Host "ESXi to run: $esxiHName" -ForegroundColor White -BackgroundColor DarkMagenta
     
-    #CALL FUNCTION UNMAP    
+    #CALL FUNCTION TO UNMAP on a Randomic ESXi Host    
     Perform-VMFSUnmap -dsName $dsName -dsNAA $dsCanonicalName -esxiHostName $esxiHName
     
 }#end of foreach
