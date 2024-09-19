@@ -1,22 +1,24 @@
-#Requires -RunAsAdministrator
 #Requires -Version 5.1
-
+#Requires -RunAsAdministrator
 <#
 .Synopsis
    Do unmap on Datastores before version 6
 .DESCRIPTION
    Do unmap on Datastores versions 3 to 5. Schedule a task on Windows to Run It
 .EXAMPLE
-   Alter lines 284 to 305 to Unmap on different days
+   Change lines between 322 and 346 to Unmap on different days
 .EXAMPLE
    Another example of how to use this cmdlet
 .SOURCE
    Based on KB https://kb.vmware.com/s/article/2057513
    Encrypt Password on Powershell (using AES KEY) https://www.altaro.com/msp-dojo/encrypt-password-powershell/
+   https://gist.github.com/ctigeek/2a56648b923d198a6e60
+   https://www.drware.com/decrypting-the-selection-of-supported-kerberos-encryption-types/
+   https://www.pdq.com/blog/secure-password-with-powershell-encrypting-credentials-part-1/
 .CREATOR
    Juliano Alves de Brito Ribeiro (find me at julianoalvesbr@live.com or https://github.com/julianoabr)
 .VERSION
-   0.2
+   0.1
 .ENVIRONMENT
    Production
 .TO THINK
@@ -31,11 +33,25 @@ no sound is heard from them.
 4. Yet their voice goes out into all the earth,
 their words to the ends of the world.
 
+#ERRORS
+#https://community.broadcom.com/vmware-cloud-foundation/discussion/powercli-for-scsi-unmap
+The request channel timed out while waiting for a reply after 00:15:00. Increase the timeout value passed to the call to Request or increase the SendTimeout value on the Binding. The time allotted to this 
+operation may have been a portion of a longer timeout.
+At V:\BOX\PROCESS\VMware\DataStore\Unmap\Automatic_Unmap_v0.1_hcp.ps1:282 char:9
++         $esxcli.storage.vmfs.unmap.Invoke($arguments)
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], TimeoutException
+    + FullyQualifiedErrorId : System.TimeoutException
+
 #>
+
+
 Clear-Host
 
 Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -WebOperationTimeoutSeconds -1 -Scope AllUsers -Confirm:$false -Verbose
 
+#This config is to resolve issue related to time-out
+Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -WebOperationTimeoutSeconds -1 -Scope Session -Confirm:$false - Verbose
 
 #VALIDATE MODULE
 $moduleExists = Get-Module -Name Vmware.VimAutomation.Core
