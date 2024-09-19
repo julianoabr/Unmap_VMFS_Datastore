@@ -101,7 +101,7 @@ function ConnectTo-vCenterServer
 If ($environmentOS -eq 'StandAloneOS'){
     
     #Set Path and User variables (CHANGE ACCORDING TO YOUR ENVIRONMENT)
-    $AESKeyFilePath = "$env:systemdrive\path1\PWD\ENCRYPT\aeskey.txt" # location of the AESKey                
+    $AESKeyFilePath = "$env:systemdrive\path1\PWD\ENCRYPT\aes.key" # location of the AESKey                
     
     $SecurePwdFilePath = "$env:systemdrive\patsh1\PROCESS\PWD\ENCRYPT\credpassword.txt" # location of the file that hosts the encrypted password                
     
